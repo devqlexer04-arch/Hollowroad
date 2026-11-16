@@ -11,7 +11,7 @@ jobs:
       - name: Build
         run: |
           set -e
-          wget -q -O project.zip "https://github.com/${{ github.repository }}/releases/download/v1/HollowRoad_Godot_fixed.zip"
+                    wget -q -O project.zip "$(wget -qO- https://api.github.com/repos/${{ github.repository }}/releases/tags/v1 | grep -o 'https://github.com/[^"]*releases/download/[^"]*\.zip' | head -n 1)"
           unzip -q project.zip
           cd HollowRoad
           mkdir -p ~/.local/share/godot/export_templates
