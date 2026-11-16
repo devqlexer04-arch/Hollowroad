@@ -1,1 +1,32 @@
 
+name: Build APK
+on:
+  workflow_dispatch:
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3
+    steps:
+      - name: Build
+        run: |
+          set -e
+          wget -q -O project.zip "https://github.com/${{ github.repository }}/releases/download/v1/HollowRoad_Godot_fixed.zip"
+          unzip -q project.zip
+          cd HollowRoad
+          mkdir -p ~/.local/share/godot/export_templates
+          if [ "$HOME" != "/root" ]; then mv /root/.local/share/godot/export_templates/4.3.stable ~/.local/share/godot/export_templates/4.3.stable; fi
+          godot --headless --import || true
+          keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore /root/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
+          godot --headless --editor --quit || true
+          S=$(ls ~/.config/godot/editor_settings-4*.tres | head -n 1)
+          echo 'export/android/android_sdk_path = "/usr/lib/android-sdk"' >> "$S"
+          echo 'export/android/debug_keystore = "/root/debug.keystore"' >> "$S"
+          echo 'export/android/debug_keystore_user = "androiddebugkey"' >> "$S"
+          echo 'export/android/debug_keystore_pass = "android"' >> "$S"
+          mkdir -p build/android
+          godot --headless --export-debug "Android" build/android/HollowRoad.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HollowRoad-android
+          path: HollowRoad/build/android/HollowRoad.apk
